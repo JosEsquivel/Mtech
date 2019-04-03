@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static Class1;
 
 namespace HashQuery
 {
@@ -34,6 +36,8 @@ namespace HashQuery
 
         private SqlCommand command; //propertie of the class which contains the actual command object to be returned
         private bool correctlyCreated = false; //flag to know if the object was succesfuly created
+
+        public LOGService logger = new LOGService("logs.txt", true, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "LOGS"));
         public sqlCommandGenerator() { } //empty constructor
         public enum SQLCommandTypes //enum possesing the only two valid values for a sql command Type
         {
@@ -70,10 +74,12 @@ namespace HashQuery
 
                 foreach (string key in parameters.Keys) //We iterate inside the parameters' keys to assign them to the command.Parameters
                     command.Parameters.AddWithValue(key, parameters[key]);
+                logger.WriteFile("sqlCommand object created correctly");
             }
             catch(Exception e)
             {
                 status = false;
+                logger.WriteFile("The addition of the parameters to the SqlCommand failed, error thrown: " + e.Message);
                 MessageBox.Show("The addition of the parameters to the SqlCommand failed, error thrown: " + e.Message, "Parameters addition fail");
             }
 
@@ -87,6 +93,7 @@ namespace HashQuery
         }
         public SqlCommand GetQueryObject()
         {
+            logger.WriteFile("sqlCommand object returned");
             return command;
         }
     }
