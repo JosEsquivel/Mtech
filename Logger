@@ -1,0 +1,104 @@
+using System;
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
+
+public class Class1
+{   /*Usage
+    LOGService logger = new LOGService("logs.txt", true, "C:\\Users\\JLUIS\\Desktop\\JL");
+    logger.WriteFile("here we put the log to be written");*/
+    public class LOGService
+    {
+        public LOGService(string file_name, bool set_TimeStamps, string base_path)
+        {
+            fileName = file_name;
+            setTimeStamp = set_TimeStamps;
+            basePath = base_path;
+        }
+        public static bool setTimeStamp;
+        public static string fileName;
+        public static string basePath;
+        public static string year = System.DateTime.Now.Year.ToString();
+        public static string month = System.DateTime.Now.ToString("MM");
+        public static string day = System.DateTime.Now.Day.ToString("00");
+
+        public virtual void SetText(string text2Display)
+        {
+        }
+
+        public string GetBasePath()
+        {
+            return basePath;
+        }
+        public string GetDatePath()
+        {
+            return String.Format(year + "\\" + month + "\\" + day);
+        }
+
+        public bool CreateDirectory()
+        {
+            bool result;
+            try
+            {
+                Directory.CreateDirectory(String.Format(GetBasePath() + "\\" + GetDatePath()));
+                result = true;
+            }
+            catch (Exception e)
+            {
+                System.Console.WriteLine(e.Message);
+                MessageBox.Show("The creation of the LOG file path was not successful, error thrown: " + e.Message, "Folder Path creation fail");
+                result = false;
+            }
+            return result;
+
+
+        }
+
+        public string GetFileName()
+        {
+            return fileName;
+        }
+
+        public bool GetSetTimeStamp()
+        {
+            return setTimeStamp;
+        }
+
+        public bool WriteFile(string content)
+        {
+            bool status = true;
+            bool createDirectory = CreateDirectory(); //creates the directory of the current date
+            string path = String.Format(GetBasePath() + "\\" + GetDatePath());
+            if (content.Length > 1)
+            {
+                try
+                {
+                    StreamWriter sw = new StreamWriter(path + "\\" + fileName, setTimeStamp, Encoding.ASCII);
+                    if (setTimeStamp)
+                    {
+                        sw.WriteLine(System.DateTime.Now + ": " + content);
+                        sw.Close();
+                    }
+                    else
+                    {
+                        sw.WriteLine(content);
+                        sw.Close();
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine(e.Message);
+                    MessageBox.Show("The process of writing the LOG was not successful, error thrown: " + e.Message, "LOG writing failed");
+                    status = false;
+                }
+
+            }
+            else
+            {
+                System.Console.WriteLine("Ommiting file writing, no content");
+            }
+
+            return status;
+        }
+    }
+}
