@@ -1,0 +1,91 @@
+/*visual C#*/
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace HashQuery
+{
+    /*Usage example
+        Hashtable queryParameters = new Hashtable()
+        { {"@Column", "ID" },
+          {"@Table", "Automovil" } };
+        SqlConnection connection = new SqlConnection("Data Source=localhost\\SQLSERVER;Initial Catalog=YourDataBaseName;Integrated Security=True");
+        
+         sqlCommandGenerator queryObj = new sqlCommandGenerator();
+            queryObj.commandText = "select @Column from @Table";
+            queryObj.connection = connection;
+            queryObj.typeOfCommand= sqlCommandGenerator.SQLCommandTypes.StoredProcedure;
+            bool obj_createdSuccesfuly = queryObj.AddParameters(queryParameters);
+            
+         SqlCommand sqlQueryObj = queryObj.GetQueryObject();*/
+
+    public class sqlCommandGenerator
+    {
+
+        /*The variables commandText, connection and typeOfCommand are to be given as properties of the class before 
+         * executing the GetQueryObject() function*/
+        public string commandText;  //variable to contain the operation, wether it is a stored procedure or a string query
+        public SqlConnection connection; //variable to store the SqlConnection object
+        public SQLCommandTypes typeOfCommand; //Variable to store the type of the command, it can be SQLCommandTypes.Text or SQLCommandTypes.StoredProcedure
+
+        private SqlCommand command; //propertie of the class which contains the actual command object to be returned
+        private bool correctlyCreated = false; //flag to know if the object was succesfuly created
+        public sqlCommandGenerator() { } //empty constructor
+        public enum SQLCommandTypes //enum possesing the only two valid values for a sql command Type
+        {
+            Text = 0,
+            StoredProcedure = 1
+        }
+        public SQLCommandTypes returnCommandType()
+        {
+            return typeOfCommand;
+        }
+
+        public bool AddParameters(Hashtable parameters) //Method to assign to the command object all its properties
+        {
+            bool status = true;
+            try
+            {
+                command = new SqlCommand(commandText, connection);  //instanciate the command objet as a SqlCommand and the commandText and connection properties are given
+                if (typeOfCommand.Equals(SQLCommandTypes.Text))     //the typeOfCommand variable is checked to see what kind of command is to be assigned
+                {
+                    command.CommandType = System.Data.CommandType.Text;
+                }
+                else if(typeOfCommand.Equals(SQLCommandTypes.StoredProcedure))
+                {
+                    command.CommandType = System.Data.CommandType.StoredProcedure;
+                }
+                else                //in case the type of the command is not valid, a text type will be assigned
+                {
+                    command.CommandType = System.Data.CommandType.Text;
+                    System.Console.WriteLine("Command type not valid, asigning it to Text type");
+                }
+
+                foreach (string key in parameters.Keys) //We iterate inside the parameters' keys to assign them to the command.Parameters
+                    command.Parameters.AddWithValue(key, parameters[key]);
+            }
+            catch(Exception e)
+            {
+                status = false;
+                MessageBox.Show("The addition of the parameters to the SqlCommand failed, error thrown: " + e.Message, "Parameters addition fail");
+            }
+
+            correctlyCreated = status;
+            return status;
+        }
+
+        public bool getStatus()
+        {
+            return correctlyCreated;
+        }
+        public SqlCommand GetQueryObject()
+        {
+            return command;
+        }
+    }
+}
