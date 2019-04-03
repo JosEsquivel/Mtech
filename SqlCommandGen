@@ -1,4 +1,3 @@
-/*visual C#*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -52,18 +51,21 @@ namespace HashQuery
             try
             {
                 command = new SqlCommand(commandText, connection);  //instanciate the command objet as a SqlCommand and the commandText and connection properties are given
-                if (typeOfCommand.Equals(SQLCommandTypes.Text))     //the typeOfCommand variable is checked to see what kind of command is to be assigned
+
+                switch (typeOfCommand)  //switch case to assign the right CommandType to the command object
                 {
-                    command.CommandType = System.Data.CommandType.Text;
-                }
-                else if(typeOfCommand.Equals(SQLCommandTypes.StoredProcedure))
-                {
-                    command.CommandType = System.Data.CommandType.StoredProcedure;
-                }
-                else                //in case the type of the command is not valid, a text type will be assigned
-                {
-                    command.CommandType = System.Data.CommandType.Text;
-                    System.Console.WriteLine("Command type not valid, asigning it to Text type");
+                    case SQLCommandTypes.Text:
+                        command.CommandType = System.Data.CommandType.Text;
+                        break;
+
+                    case SQLCommandTypes.StoredProcedure:
+                        command.CommandType = System.Data.CommandType.StoredProcedure;
+                        break;
+
+                    default:
+                        command.CommandType = System.Data.CommandType.Text;
+                        System.Console.WriteLine("Command type not valid, asigning it to Text type");
+                        break;
                 }
 
                 foreach (string key in parameters.Keys) //We iterate inside the parameters' keys to assign them to the command.Parameters
