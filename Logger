@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 public class Class1
 {   /*Usage
-    LOGService logger = new LOGService("logs.txt", true, "C:\\Users\\JLUIS\\Desktop\\JL");
+    LOGService logger = new LOGService("logs.txt", true, Path.Combine( Environment.GetFolderPath(Environment.SpecialFolder.Desktop),"LOGS" ));
     logger.WriteFile("here we put the log to be written");*/
     public class LOGService
     {
@@ -32,7 +32,7 @@ public class Class1
         }
         public string GetDatePath()
         {
-            return String.Format(year + "\\" + month + "\\" + day);
+            return String.Format(Path.Combine(year, month, day));
         }
 
         public bool CreateDirectory()
@@ -40,7 +40,7 @@ public class Class1
             bool result;
             try
             {
-                Directory.CreateDirectory(String.Format(GetBasePath() + "\\" + GetDatePath()));
+                Directory.CreateDirectory(String.Format( Path.Combine(GetBasePath() ,GetDatePath()) ));
                 result = true;
             }
             catch (Exception e)
@@ -68,12 +68,12 @@ public class Class1
         {
             bool status = true;
             bool createDirectory = CreateDirectory(); //creates the directory of the current date
-            string path = String.Format(GetBasePath() + "\\" + GetDatePath());
+            string path = String.Format(Path.Combine( GetBasePath(), GetDatePath() ));
             if (content.Length > 1)
             {
                 try
                 {
-                    StreamWriter sw = new StreamWriter(path + "\\" + fileName, setTimeStamp, Encoding.ASCII);
+                    StreamWriter sw = new StreamWriter(Path.Combine( path, fileName ), setTimeStamp, Encoding.ASCII);
                     if (setTimeStamp)
                     {
                         sw.WriteLine(System.DateTime.Now + ": " + content);
