@@ -37,6 +37,17 @@ namespace HashQuery
         private SqlCommand command; //propertie of the class which contains the actual command object to be returned
         private bool correctlyCreated = false; //flag to know if the object was succesfuly created
 
+        Hashtable errorSet = new Hashtable  //hashtable containing all the possible error messages inside this class
+        {
+            {"setParametersError","Setting the parameters to the SqlCommand object failed, error thrown:" },
+            {"notStringParameter","The parameter {0} inside the given parameters HashTable is not of type string" },
+            {"missingStarting@","The parameter {0} inside the given parameters HashTable does not start with a @" },
+            {"nullValueParameter","The parameter {0} inside the given parameters HashTable has a null value" },
+            {"invalidValueParameter","The parameter {0} inside the given parameters HashTable has an invalid value" },
+            {"wrongNumberOfParameters","The number of parameters required and given for the query are different. {0} were given inside the HashTable and {1} are required in the query" },
+            {"missingRequiredParameter","The parameter {0} is required by the text query but was not given in the parameters HashTable" }
+        };
+
         public LOGService logger = new LOGService("logs.txt", true, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "LOGS"));
         public sqlCommandGenerator() { } //empty constructor
         public enum SQLCommandTypes //enum possesing the only two valid values for a sql command Type
@@ -49,38 +60,38 @@ namespace HashQuery
             return typeOfCommand;
         }
 
-        private void CheckParameters(Hashtable parametersHashTable) //function to check if the parameter's HashTable has the right format
+        private void CheckParameters(Hashtable parametersHashTable, string nameOfCallingMethod) //function to check if the parameter's HashTable has the right format
         {
             foreach (DictionaryEntry pair in parametersHashTable)
             {
                 //inside each if we get the key for the pair in the present iteration of the for each, we retrieve its key and make validations to check if both key and parameter have a suitable format
                 if (pair.Key.GetType() != typeof(string))       
                 {
-                    System.Console.WriteLine("The key {0} inside the parameters HashTable given is not type string", pair.Key);
-                    logger.WriteFile(String.Format("The key {0} inside the parameters HashTable given  is not type string", pair.Key));
-                    System.ArgumentException argEx = new System.ArgumentException(String.Format("The key {0} inside the parameters HashTable given is not type string", pair.Key));
+                    System.Console.WriteLine("error.exc.sqlCommandGenerator.CheckParameters_"+nameOfCallingMethod+": "+(string)errorSet["notStringParameter"], pair.Key);
+                    logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod +": "+(string)errorSet["notStringParameter"], pair.Key));
+                    System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod+": "+(string)errorSet["notStringParameter"], pair.Key));
                     throw argEx;
                 }
                 string presentKey = pair.Key.ToString();
                 if (presentKey[0] != '@')
                 {
-                    System.Console.WriteLine("The key {0} inside the parameters HashTable given does not start with a @", pair.Key);
-                    logger.WriteFile(String.Format("The key {0} inside the parameters HashTable given does not start with a @", pair.Key));
-                    System.ArgumentException argEx = new System.ArgumentException(String.Format("The key {0} inside the parameters HashTable given does not start with a @", pair.Key));
+                    System.Console.WriteLine("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod +": "+(string)errorSet["missingStarting@"], pair.Key);
+                    logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["missingStarting@"], pair.Key));
+                    System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["missingStarting@"], pair.Key));
                     throw argEx;
                 }
                 if (parametersHashTable[pair.Key] == null)
                 {
-                    System.Console.WriteLine("The key {0} inside the parameters HashTable given has a null value for a parameter", pair.Key);
-                    logger.WriteFile(String.Format("The key {0} inside the parameters HashTable given has a null value for a parameter", pair.Key));
-                    System.ArgumentException argEx = new System.ArgumentException(String.Format("The key {0} inside the parameters HashTable given has a null value for a parameter", pair.Key));
+                    System.Console.WriteLine("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["nullValueParameter"], pair.Key);
+                    logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["nullValueParameter"], pair.Key));
+                    System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["nullValueParameter"], pair.Key));
                     throw argEx;
                 }
                 if (parametersHashTable[pair.Key].ToString().Length < 1)
                 {
-                    System.Console.WriteLine("The key {0} inside the parameters HashTable given has an invalid parameter", pair.Key);
-                    logger.WriteFile(String.Format("The key {0} inside the parameters HashTable given has an invalid parameter", pair.Key));
-                    System.ArgumentException argEx = new System.ArgumentException(String.Format("The key {0} inside the parameters HashTable given has an invalid parameter", pair.Key));
+                    System.Console.WriteLine("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["invalidValueParameter"], pair.Key);
+                    logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["invalidValueParameter"], pair.Key));
+                    System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckParameters_" + nameOfCallingMethod + ": " + (string)errorSet["invalidValueParameter"], pair.Key));
                     throw argEx;
                 }
 
@@ -88,18 +99,18 @@ namespace HashQuery
             }
 
         }
-        private void CheckParametersNumber(Hashtable parametersHashTable, string queryWithParameters) //if the query to be executed is string, checks if the parameters required are the same as the given ones
+        private void CheckParametersNumber(Hashtable parametersHashTable, string queryWithParameters, string nameOfCallingMethod) //if the query to be executed is string, checks if the parameters required are the same as the given ones
         {
             int numberofParametersInQuery = queryWithParameters.Count(f => f == '@');
             int numberOfParametersInHashTable = parametersHashTable.Count;
             if(numberofParametersInQuery!= numberOfParametersInHashTable)
             {
-                logger.WriteFile(String.Format("The number of parameters required and given for the query are different. {0} were given inside the HashTable and {1} are required in the query", numberOfParametersInHashTable, numberofParametersInQuery));
-                System.ArgumentException argEx = new System.ArgumentException(String.Format("The number of parameters required and given for the query are different. {0} were given inside the HashTable and {1} are required in the query", numberOfParametersInHashTable, numberofParametersInQuery));
+                logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckParametersNumber_" + nameOfCallingMethod + ": " + (string)errorSet["wrongNumberOfParameters"], numberOfParametersInHashTable, numberofParametersInQuery));
+                System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckParametersNumber_" + nameOfCallingMethod + ": " + (string)errorSet["wrongNumberOfParameters"], numberOfParametersInHashTable, numberofParametersInQuery));
                 throw argEx;
             }
         }
-        private void CheckRequiredParameters(Hashtable parametersHashTable, string queryWithParameters)
+        private void CheckRequiredParameters(Hashtable parametersHashTable, string queryWithParameters, string nameOfCallingMethod)
         {
             string[] str = queryWithParameters.Split(' '); //aquirement of each word inside the query text
             Hashtable parametersFound = new Hashtable();  //hashtable to save the required parameters
@@ -129,9 +140,9 @@ namespace HashQuery
             {
                 if (parametersFound[key].ToString() == "False")   //in case a parameter was not given, an exception will be rised
                 {
-                    Console.WriteLine("the parameter {0} is required by the text query but was not given in the parameters HashTable ", key);
-                    logger.WriteFile(String.Format("the parameter {0} is required by the text query but was not given in the parameters HashTable ", key));
-                    System.ArgumentException argEx = new System.ArgumentException(String.Format("the parameter {0} is required by the text query but was not given in the parameters HashTable ", key));
+                    Console.WriteLine("error.exc.sqlCommandGenerator.CheckRequiredParameters" + nameOfCallingMethod + ": " + (string)errorSet["missingRequiredParameter"], key);
+                    logger.WriteFile(String.Format("error.exc.sqlCommandGenerator.CheckRequiredParameters" + nameOfCallingMethod + ": " + (string)errorSet["missingRequiredParameter"], key));
+                    System.ArgumentException argEx = new System.ArgumentException(String.Format("error.exc.sqlCommandGenerator.CheckRequiredParameters" + nameOfCallingMethod + ": " + (string)errorSet["missingRequiredParameter"], key));
                     throw argEx;
                 }
             }
@@ -139,13 +150,12 @@ namespace HashQuery
         public bool SetParameters(Hashtable parameters) //Method to assign to the command object all its properties
         {
             bool status = true;
-            CheckParameters(parameters); //function to check if the parameter's Hashtable has suitable values, in case it does not, an exception will be thrown
+            CheckParameters(parameters,"SetPameters"); //function to check if the parameter's Hashtable has suitable values, in case it does not, an exception will be thrown
 
             if(typeOfCommand == SQLCommandTypes.Text)
             {
-                CheckParametersNumber(parameters, commandText); //checks if the given parameters and the required in the query are the same number, only applicable for text queries
-                CheckRequiredParameters(parameters, commandText); //checks if every parameter required by the commandText is given in the parameters hashtable
-
+                CheckParametersNumber(parameters, commandText,"SetParameters"); //checks if the given parameters and the required in the query are the same number, only applicable for text queries
+                CheckRequiredParameters(parameters, commandText, "SetParameters"); //checks if every parameter required by the commandText is given in the parameters hashtable
             }
                 
             try
@@ -165,19 +175,19 @@ namespace HashQuery
                     default:
                         command.CommandType = System.Data.CommandType.Text;
                         System.Console.WriteLine("Command type not valid, asigning it to Text type");
-                        //TODO poner en el LOG
+                        logger.WriteFile("msg.sqlCommandGenerator.SetParameters: Command type not valid or not given, asigning it to Text type");
                         break;
                 }
 
                 foreach (string key in parameters.Keys) //We iterate inside the parameters' keys to assign them to the command.Parameters
                     command.Parameters.AddWithValue(key, parameters[key]);
-                logger.WriteFile("sqlCommand object created correctly");
+                logger.WriteFile("msg.sqlCommandGenerator.SetParameters: sqlCommand object created correctly");
             }
             catch(Exception e)
             {
                 status = false;
-                logger.WriteFile("The addition of the parameters to the SqlCommand object failed, error thrown: " + e.Message);
-                System.ArgumentException argEx = new System.ArgumentException("The addition of the parameters to the SqlCommand object failed", e);
+                logger.WriteFile("error.exc.sqlCommandGenerator.SetParameters: " + (string)errorSet["setParametersError"] + e.Message);
+                System.ArgumentException argEx = new System.ArgumentException(System.String.Format("error.exc.sqlCommandGenerator.SetParameters: " + (string)errorSet["setParametersError"] + e.Message));
                 throw argEx;
             }
 
