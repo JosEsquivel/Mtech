@@ -15,15 +15,24 @@ namespace HashQuery
         Hashtable queryParameters = new Hashtable()
         { {"@Column", "ID" },
           {"@Table", "Automovil" } };
-        SqlConnection connection = new SqlConnection("Data Source=localhost\\SQLSERVER;Initial Catalog=YourDataBaseName;Integrated Security=True");
         
-         sqlCommandGenerator queryObj = new sqlCommandGenerator();
-            queryObj.commandText = "select @Column from @Table";
-            queryObj.connection = connection;
-            queryObj.typeOfCommand= sqlCommandGenerator.SQLCommandTypes.StoredProcedure;
-            bool obj_createdSuccesfuly = queryObj.SetParameters(queryParameters);
-            
-         SqlCommand sqlQueryObj = queryObj.GetQueryObject();*/
+        //First example, giving a string as the String connection
+        queryObj = new sqlCommandGenerator();
+        queryObj.commandText = "select @Column from @Table";
+        queryObj.connectionString = "Data Source=localhost\\SQLSERVER;Initial Catalog=YourDataBaseName;Integrated Security=True";
+        queryObj.typeOfCommand = sqlCommandGenerator.SQLCommandTypes.Text;
+        SqlCommand sqlQueryObj = queryObj.GetQueryObject();
+
+        //Second example, selecting a String connection from the App.config file 
+        queryObj = new sqlCommandGenerator();
+        queryObj.commandText = "select @Column from @Table";
+        queryObj.connectionStringSelection = sqlCommandGenerator.sqlConnection.AWSCybersourceCnxStr;
+        queryObj.typeOfCommand = sqlCommandGenerator.SQLCommandTypes.Text;
+        bool obj_createdSuccesfuly = queryObj.SetParameters(queryParameters);
+        SqlCommand sqlQueryObj = queryObj.GetQueryObject();
+        
+    
+    */
 
     public class sqlCommandGenerator
     {
@@ -31,9 +40,10 @@ namespace HashQuery
         /*The variables commandText, connection and typeOfCommand are to be given as properties of the class before 
          * executing the GetQueryObject() function*/
         public string commandText;  //variable to contain the operation, wether it is a stored procedure or a string query
-        public SqlConnection connection; //variable to store the SqlConnection object
+        //public SqlConnection connection; //variable to store the SqlConnection object
+        public string connectionString = "";
         public SQLCommandTypes typeOfCommand; //Variable to store the type of the command, it can be SQLCommandTypes.Text or SQLCommandTypes.StoredProcedure
-
+        public sqlConnection connectionStringSelection = sqlConnection.invalid; //Variable to store the connection string
         private SqlCommand command; //propertie of the class which contains the actual command object to be returned
         private bool correctlyCreated = false; //flag to know if the object was succesfuly created
 
@@ -45,7 +55,8 @@ namespace HashQuery
             {"nullValueParameter","The parameter {0} inside the given parameters HashTable has a null value" },
             {"invalidValueParameter","The parameter {0} inside the given parameters HashTable has an invalid value" },
             {"wrongNumberOfParameters","The number of parameters required and given for the query are different. {0} were given inside the HashTable and {1} are required in the query" },
-            {"missingRequiredParameter","The parameter {0} is required by the text query but was not given in the parameters HashTable" }
+            {"missingRequiredParameter","The parameter {0} is required by the text query but was not given in the parameters HashTable" },
+            {"stringConnectionError","The string connection has not been set up correctly. Give the string connection by a String or by a parameter in .config file, not both" }
         };
 
         public LOGService logger = new LOGService("logs.txt", true, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "LOGS"));
@@ -55,6 +66,11 @@ namespace HashQuery
             Text = 0,
             StoredProcedure = 1
         }
+        public enum sqlConnection
+        {
+            invalid = 0,
+            AWSCybersourceCnxStr = 1
+        } //enum possesing the possible connection strings values
         public SQLCommandTypes returnCommandType()
         {
             return typeOfCommand;
@@ -160,7 +176,32 @@ namespace HashQuery
                 
             try
             {
-                command = new SqlCommand(commandText, connection);  //instanciate the command objet as a SqlCommand and the commandText and connection properties are given
+                SqlConnection connection;
+                if (connectionString.Length>1 && connectionStringSelection== sqlConnection.invalid)
+                {
+                    connection = new SqlConnection(connectionString);
+                    command = new SqlCommand(commandText, connection);  //instanciate the command objet as a SqlCommand and the commandText and connection properties are given
+                    System.Console.WriteLine("Connection string assigned by text");
+                }
+                else if (connectionString.Length < 1 && connectionStringSelection != sqlConnection.invalid)
+                {
+                    switch (connectionStringSelection)
+                    {
+                        case sqlConnection.AWSCybersourceCnxStr:
+                            connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["AWS.CybersourceCnxStr"].ConnectionString; ;
+                            break;
+                    }
+                    System.Console.WriteLine("Connection string assigned by App config");
+                    connection = new SqlConnection(connectionString);
+                    command = new SqlCommand(commandText, connection);  //instanciate the command objet as a SqlCommand and the commandText and connection properties are given
+                }
+                else
+                {
+                    logger.WriteFile("error.exc.sqlCommandGenerator.SetParameters: " + (string)errorSet["stringConnectionError"]);
+                    System.ArgumentException argEx = new System.ArgumentException(System.String.Format("error.exc.sqlCommandGenerator.SetParameters: " + (string)errorSet["stringConnectionError"]));
+                    System.Console.WriteLine("Connection string not assigned, throwing exception");
+                    throw argEx;
+                }
 
                 switch (typeOfCommand)  //switch case to assign the right CommandType to the command object
                 {
@@ -203,6 +244,10 @@ namespace HashQuery
         {
             logger.WriteFile("sqlCommand object returned");
             return command;
+        }
+        public static string getConnectionTest()
+        {
+            return System.Configuration.ConfigurationManager.ConnectionStrings["AWS.CybersourceCnxStr"].ConnectionString;
         }
     }
 }
